@@ -6,9 +6,13 @@ import {
   Put,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product } from './product.entity';
+import { Roles } from 'src/auth/roles.decorator';
+import { LocalAuthGuard } from 'src/auth/local-auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('products')
 export class ProductsController {
@@ -24,19 +28,24 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
+  @Roles('owner')
+  @UseGuards(LocalAuthGuard, RolesGuard)
   @Post()
   create(@Body() product: Product): Promise<Product> {
-    console.log(product);
     return this.productsService.create(product);
   }
 
+  @Roles('owner')
+  @UseGuards(LocalAuthGuard, RolesGuard)
   @Put(':id')
-  update(@Param('id') id: number, @Body() product: Product): Promise<void> {
+  update(@Param('id') id: any, @Body() product: Product) {
     return this.productsService.update(id, product);
   }
 
+  @Roles('owner')
+  @UseGuards(LocalAuthGuard, RolesGuard)
   @Delete(':id')
-  remove(@Param('id') id: number): Promise<void> {
+  remove(@Param('id') id: any): Promise<void> {
     return this.productsService.remove(id);
   }
 }
