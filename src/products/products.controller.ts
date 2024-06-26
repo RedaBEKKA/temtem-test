@@ -7,45 +7,50 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ProductsService } from './products.service';
+
 import { Product } from './product.entity';
-import { Roles } from 'src/auth/roles.decorator';
-import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { ProductService } from './products.service';
+import { Role } from 'src/auth/role.enum';
 
 @Controller('products')
-export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+export class ProductController {
+  constructor(private readonly productService: ProductService) {}
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  create(@Body() product: Product): Promise<Product> {
+    return this.productService.create(product);
+  }
 
   @Get()
-  findAll(): Promise<Product[]> {
-    return this.productsService.findAll();
+  findAll(
+    @Query('category') category: string,
+    @Query('sort') sort: 'ASC' | 'DESC',
+  ): Promise<Product[]> {
+    return this.productService.findAll({ category, sort });
   }
 
   @Get(':id')
   findOne(@Param('id') id: number): Promise<Product> {
-    return this.productsService.findOne(id);
+    return this.productService.findOne(id);
   }
 
-  @Roles('owner')
-  @UseGuards(LocalAuthGuard, RolesGuard)
-  @Post()
-  create(@Body() product: Product): Promise<Product> {
-    return this.productsService.create(product);
-  }
-
-  @Roles('owner')
-  @UseGuards(LocalAuthGuard, RolesGuard)
   @Put(':id')
-  update(@Param('id') id: any, @Body() product: Product) {
-    return this.productsService.update(id, product);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.StoreOwner)
+  update(@Param('id') id: number, @Body() product: Product): Promise<void> {
+    return this.productService.update(id, product);
   }
 
-  @Roles('owner')
-  @UseGuards(LocalAuthGuard, RolesGuard)
   @Delete(':id')
-  remove(@Param('id') id: any): Promise<void> {
-    return this.productsService.remove(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.StoreOwner)
+  remove(@Param('id') id: number): Promise<void> {
+    return this.productService.remove(id);
   }
 }

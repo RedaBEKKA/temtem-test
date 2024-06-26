@@ -4,29 +4,40 @@ import { Repository } from 'typeorm';
 import { Product } from './product.entity';
 
 @Injectable()
-export class ProductsService {
+export class ProductService {
   constructor(
     @InjectRepository(Product)
-    private productsRepository: Repository<Product>,
+    private readonly productRepository: Repository<Product>,
   ) {}
 
-  findAll(): Promise<Product[]> {
-    return this.productsRepository.find();
+  create(product: Product): Promise<Product> {
+    return this.productRepository.save(product);
+  }
+
+  findAll(
+    filters: { category?: string; sort?: 'ASC' | 'DESC' } = {},
+  ): Promise<Product[]> {
+    const queryBuilder = this.productRepository.createQueryBuilder('product');
+    if (filters.category) {
+      queryBuilder.andWhere('product.category = :category', {
+        category: filters.category,
+      });
+    }
+    if (filters.sort) {
+      queryBuilder.orderBy('product.price', filters.sort);
+    }
+    return queryBuilder.getMany();
   }
 
   findOne(id: number): Promise<Product> {
-    return this.productsRepository.findOne({ where: { id } });
-  }
-
-  create(product: Product): Promise<Product> {
-    return this.productsRepository.save(product);
+    return this.productRepository.findOne({ where: { id } });
   }
 
   async update(id: number, product: Product): Promise<void> {
-    await this.productsRepository.update(id, product);
+    await this.productRepository.update(id, product);
   }
 
   async remove(id: number): Promise<void> {
-    await this.productsRepository.delete(id);
+    await this.productRepository.delete(id);
   }
 }
